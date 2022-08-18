@@ -1,7 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import styled from 'styled-components';
 
-export const ImageGalleryItem = ({
+const ImageGalleryItem = ({
   smallImg,
   largeImg,
   onModalClick,
@@ -17,6 +17,7 @@ export const ImageGalleryItem = ({
     </ImageItemStyled>
   );
 };
+export default memo(ImageGalleryItem);
 
 const ImageItemStyled = styled.li`
   border-radius: 2px;

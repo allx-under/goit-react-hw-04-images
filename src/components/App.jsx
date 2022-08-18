@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { API } from './API/API';
 
-import { SearchBar } from './Searchbar/Searchbar';
+import SearchBar from './Searchbar/Searchbar';
 import { ImageGallery } from './ImageGallery/ImageGallery';
 import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
@@ -23,14 +23,14 @@ export const App = () => {
   const [description, setDescription] = useState('');
   const isMount = useIsMount();
 
-  const onSubmit = e => {
+  const onSubmit = useCallback(e => {
     e.preventDefault();
     setQuery(e.target.elements.input.value);
     setPage(1);
     setImages([]);
 
     e.target.reset();
-  };
+  }, []);
 
   const onClickOpenModal = (url, description) => {
     setIsLoading(true);

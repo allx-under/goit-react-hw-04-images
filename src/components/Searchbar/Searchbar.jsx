@@ -1,10 +1,11 @@
-import React from 'react';
+import React, { memo } from 'react';
 import styles from './searchbar.module.css';
 import PropTypes from 'prop-types';
 
-export const SearchBar = ({ onSubmit }) => {
+const SearchBar = ({ onSubmit }) => {
   return (
     <header className={styles.searchbar}>
+      {console.log('searchbar')}
       <form className={styles.searchForm} onSubmit={onSubmit}>
         <button type="submit" className={styles.searchFormBtn}>
           <span className={styles.searchFormBtnLabel}>Search</span>
@@ -23,6 +24,7 @@ export const SearchBar = ({ onSubmit }) => {
   );
 };
 
+export default memo(SearchBar);
 SearchBar.propTypes = {
   onSubmit: PropTypes.func,
 };
