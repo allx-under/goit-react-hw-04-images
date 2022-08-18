@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { API } from './API/API';
 
@@ -8,109 +8,93 @@ import { Loader } from './Loader/Loader';
 import { Modal } from './Modal/Modal';
 import { Button } from './Button/Button';
 
+import { useIsMount } from './hooks/useIsMount';
+
 const imgAPI = new API();
 const portalContainer = document.querySelector('#portal');
 
-export class App extends Component {
-  state = {
-    images: [],
-    page: 1,
-    query: '',
-    isLoading: false,
-    isOpenModal: false,
-    largeImg: '',
-    description: '',
-  };
+export const App = () => {
+  const [images, setImages] = useState([]);
+  const [page, setPage] = useState(1);
+  const [query, setQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpenModal, setIsOpenModal] = useState(false);
+  const [largeImg, setLargeImg] = useState('');
+  const [description, setDescription] = useState('');
+  const isMount = useIsMount();
 
-  onSubmit = e => {
+  const onSubmit = e => {
     e.preventDefault();
-    this.setState({
-      query: e.target.elements.input.value,
-      page: 1,
-      images: [],
-    });
+    setQuery(e.target.elements.input.value);
+    setPage(1);
+    setImages([]);
+
     e.target.reset();
   };
 
-  onClickOpenModal = (url, description) => {
-    this.setState({
-      largeImg: url,
-      description,
-      isOpenModal: true,
-      isLoading: true,
-    });
-    window.addEventListener('keydown', this.onCloseModalByEsc);
-    this.setState({ isLoading: false });
+  const onClickOpenModal = (url, description) => {
+    setIsLoading(true);
+    setLargeImg(url);
+    setDescription(description);
+    setIsOpenModal(true);
+
+    window.addEventListener('keydown', onCloseModalByEsc);
+    setIsLoading(false);
   };
 
-  onCloseModalByEsc = e => {
+  const onCloseModalByEsc = e => {
     if (e.key === 'Escape') {
-      this.setState({ isOpenModal: false });
+      setIsOpenModal(false);
     }
-    window.removeEventListener('keydown', this.onCloseModal);
+    window.removeEventListener('keydown', onCloseModalByEsc);
   };
 
-  onClickCloseModal = e => {
+  const onClickCloseModal = e => {
     if (e.currentTarget === e.target) {
-      this.setState({ isOpenModal: false });
+      setIsOpenModal(false);
     }
   };
 
-  onLoadMore = async () => {
-    this.setState(prevState => ({
-      page: prevState.page + 1,
-    }));
+  const onLoadMore = () => {
+    setPage(prevState => prevState + 1);
   };
 
-  async componentDidUpdate(prevProps, prevState) {
-    const { page } = this.state;
-    const { query } = this.state;
-    if (prevState.page !== page) {
-      this.setState({ isLoading: true });
-      try {
-        const { hits } = await imgAPI.fetchImgs(query, page);
-        this.setState({ images: [...prevState.images, ...hits] });
-      } catch (error) {
-        console.log(error);
-      } finally {
-        this.setState({ isLoading: false });
-      }
+  const getImages = useCallback(async () => {
+    try {
+      const { hits } = await imgAPI.fetchImgs(query, page);
+      setImages(prevState => [...prevState, ...hits]);
+    } catch (error) {
+      console.log(error);
     }
-    if (prevState.query !== query) {
-      this.setState({ isLoading: true });
-      try {
-        const { hits } = await imgAPI.fetchImgs(query, page);
-        this.setState({ images: hits });
-      } catch (error) {
-        console.log(error);
-      } finally {
-        this.setState({ isLoading: false });
-      }
-    }
-  }
+  }, [query, page]);
 
-  render() {
-    return (
-      <>
-        <SearchBar onSubmit={this.onSubmit} />
-        <ImageGallery
-          images={this.state.images}
-          onModalOpen={this.onClickOpenModal}
-        />
-        {this.state.images.length !== 0 && (
-          <Button onLoadMore={this.onLoadMore} btnText="Load more..." />
+  useEffect(() => {
+    if (isMount) {
+      return;
+    } else {
+      setIsLoading(true);
+      getImages();
+      setIsLoading(false);
+    }
+  }, [getImages, isMount, page, query]);
+
+  return (
+    <>
+      <SearchBar onSubmit={onSubmit} />
+      <ImageGallery images={images} onModalOpen={onClickOpenModal} />
+      {images.length !== 0 && (
+        <Button onLoadMore={onLoadMore} btnText="Load more..." />
+      )}
+      {isOpenModal &&
+        createPortal(
+          <Modal
+            onClickCloseModal={onClickCloseModal}
+            img={largeImg}
+            descr={description}
+          />,
+          portalContainer
         )}
-        {this.state.isOpenModal &&
-          createPortal(
-            <Modal
-              onClickCloseModal={this.onClickCloseModal}
-              img={this.state.largeImg}
-              descr={this.state.description}
-            />,
-            portalContainer
-          )}
-        {this.state.isLoading && createPortal(<Loader />, portalContainer)}
-      </>
-    );
-  }
-}
+      {isLoading && createPortal(<Loader />, portalContainer)}
+    </>
+  );
+};
